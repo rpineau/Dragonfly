@@ -618,8 +618,8 @@ int CDragonfly::getState()
 #endif
     }
 
-    if (input0 == 0 && input1 == 0 ) {
-        m_nRoofState = UNKNOWN;
+    if (input0 == 0 && input1 == 0 && m_RoofAction != IDLE) {
+        m_nRoofState = MOVING;
     }
     else if (input0 == 1 && input1 == 0) {
         m_nRoofState = OPEN;
@@ -627,9 +627,10 @@ int CDragonfly::getState()
     else if (input0 == 0 && input1 == 1) {
         m_nRoofState = CLOSED;
     }
-    else if (input0 == 1 && input1 == 1 && m_RoofAction != IDLE) {
-        m_nRoofState = MOVING;
+    else {
+        m_nRoofState = UNKNOWN;
     }
+
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
     m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getState] m_nRoofState : " << m_nRoofState << std::endl;
@@ -688,7 +689,7 @@ int CDragonfly::getSafeState(bool &bIsSafe)
         safeInput = std::stoi(vFields[1]);
     }
 
-    if(safeInput == 1) {
+    if(safeInput == 0) {
         bIsSafe = true;
     }
     else {
