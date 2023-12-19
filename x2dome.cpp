@@ -27,6 +27,7 @@ X2Dome::X2Dome(const char* pszSelection,
         m_Dragonfly.setRelayPulseTime(m_pIniUtil->readDouble(PARENT_KEY, CHILD_KEY_RELAY_PULSE, 1.0));
         m_pIniUtil->readString(PARENT_KEY, CHILD_KEY_IP, "192.168.1.123", szIpAddress, 255);
         m_Dragonfly.setCheckSafe(m_pIniUtil->readInt(PARENT_KEY, CHILD_KEY_SAFE, 0) == 1 );
+        m_Dragonfly.setCheckMountParked(m_pIniUtil->readInt(PARENT_KEY, CHILD_KEY_MOUNT, 0) == 1 );
         m_sIpAddress.assign(szIpAddress);
     }
 }
@@ -106,6 +107,7 @@ int X2Dome::execModalSettingsDialog()
     bool bPressedOK = false;
     double dTime;
     bool bCheckSafe;
+    bool bCheckMountParked;
     char szIpAddress[255];
     
     if (NULL == ui)
@@ -129,6 +131,8 @@ int X2Dome::execModalSettingsDialog()
     dx->setText("IPAddress", m_sIpAddress.c_str());
     dx->setPropertyDouble("relayDuration", "value", m_Dragonfly.getRelayPulseTime());
     dx->setChecked("checkSafe", m_Dragonfly.getCheckSafe()==true);
+    dx->setChecked("checkMountParked", m_Dragonfly.getCheckMountParked()==true);
+
     //Display the user interface
     if ((nErr = ui->exec(bPressedOK)))
         return nErr;
@@ -137,8 +141,11 @@ int X2Dome::execModalSettingsDialog()
     if (bPressedOK) {
         dx->propertyDouble("relayDuration", "value", dTime);
         bCheckSafe = (dx->isChecked("checkSafe")!=0);
+        bCheckMountParked = (dx->isChecked("checkMountParked")!=0);
+
         m_Dragonfly.setRelayPulseTime(dTime);
         m_Dragonfly.setCheckSafe(bCheckSafe);
+        m_Dragonfly.setCheckMountParked(bCheckMountParked);
         if(!m_bLinked) {
             dx->propertyString("IPAddress", "text", szIpAddress, 255);
             m_sIpAddress.assign(szIpAddress);
@@ -146,6 +153,7 @@ int X2Dome::execModalSettingsDialog()
         }
         m_pIniUtil->writeDouble(PARENT_KEY, CHILD_KEY_RELAY_PULSE, dTime);
         m_pIniUtil->writeInt(PARENT_KEY, CHILD_KEY_SAFE, bCheckSafe?1:0);
+        m_pIniUtil->writeInt(PARENT_KEY, CHILD_KEY_MOUNT, bCheckMountParked?1:0);
     }
     return nErr;
 

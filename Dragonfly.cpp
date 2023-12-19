@@ -20,6 +20,7 @@ CDragonfly::CDragonfly()
 
     m_nRelayActiveDurationMs = 1000; // 1 second by default
     m_bCheckSafe = false;
+    m_bCheckMountParked = false;
 
 #ifdef PLUGIN_DEBUG
 #if defined(SB_WIN_BUILD)
@@ -297,6 +298,7 @@ int CDragonfly::openRoof()
     std::string sResp;
     std::stringstream ssCmd;
     bool bIsSafe;
+    bool bIsMountParked;
     
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
     m_sLogFile << "["<<getTimeStamp()<<"]"<< " [openRoof] Opening roof." << std::endl;
@@ -311,8 +313,15 @@ int CDragonfly::openRoof()
     if(nErr) {
         return ERR_CMDFAILED;
     }
-        
+
     if(!bIsSafe)
+        return ERR_CMDFAILED;
+
+    nErr = getSafeMountState(bIsMountParked);
+    if(nErr) {
+        return ERR_CMDFAILED;
+    }
+    if(!bIsMountParked)
         return ERR_CMDFAILED;
     
     ssCmd << "!relio rlpulse 0 0 " << m_nRelayActiveDurationMs << "#";
@@ -328,6 +337,8 @@ int CDragonfly::closeRoof()
     std::string sResp;
     std::stringstream ssCmd;
     bool bIsSafe;
+    bool bIsMountParked;
+
     if(!m_bIsConnected)
         return NOT_CONNECTED;
 
@@ -343,8 +354,15 @@ int CDragonfly::closeRoof()
     if(nErr) {
         return ERR_CMDFAILED;
     }
-        
+
     if(!bIsSafe)
+        return ERR_CMDFAILED;
+
+    nErr = getSafeMountState(bIsMountParked);
+    if(nErr) {
+        return ERR_CMDFAILED;
+    }
+    if(!bIsMountParked)
         return ERR_CMDFAILED;
 
     ssCmd << "!relio rlpulse 0 0 " << m_nRelayActiveDurationMs << "#";
@@ -514,7 +532,6 @@ double CDragonfly::getRelayPulseTime()
     return m_nRelayActiveDurationMs/1000;
 }
 
-
 void CDragonfly::setCheckSafe(bool bCheckSafe)
 {
     m_bCheckSafe = bCheckSafe;
@@ -533,6 +550,26 @@ bool CDragonfly::getCheckSafe()
 #endif
     return m_bCheckSafe;
 }
+
+void CDragonfly::setCheckMountParked(bool bCheckMountParked)
+{
+    m_bCheckMountParked = bCheckMountParked;
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [setCheckMountParked] m_bCheckSafe : " << (m_bCheckMountParked?"Yes":"No")<< std::endl;
+    m_sLogFile.flush();
+#endif
+
+}
+
+bool CDragonfly::getCheckMountParked()
+{
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getCheckMountParked] m_bCheckSafe : " << (m_bCheckMountParked?"Yes":"No")<< std::endl;
+    m_sLogFile.flush();
+#endif
+    return m_bCheckMountParked;
+}
+
 
 
 #pragma mark - Getter / Setter
@@ -704,6 +741,69 @@ int CDragonfly::getSafeState(bool &bIsSafe)
     return nErr;
 }
 
+int CDragonfly::getSafeMountState(bool &bIsSafe)
+{
+    int nErr = PLUGIN_OK;
+    std::string sResp;
+    std::vector<std::string> vFields;
+    int safeInput;
+
+    if(!m_bIsConnected)
+        return NOT_CONNECTED;
+
+    if(!m_bCheckMountParked) {
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getSafeMountState] input 8 safety check DISABLED." << std::endl;
+        m_sLogFile.flush();
+#endif
+        bIsSafe = true;
+        return PLUGIN_OK;
+    }
+
+    bIsSafe = false;
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getSafeMountState] input 8 state for safety check." << std::endl;
+    m_sLogFile.flush();
+#endif
+
+    // read input 2
+    nErr = domeCommand("!relio sndgrd 0 7#", sResp);
+    if(nErr)
+        return nErr;
+
+    nErr = parseFields(sResp, vFields, ':');
+    if(nErr) {
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getSafeMountState] Error parsing response : " << sResp << std::endl;
+        m_sLogFile.flush();
+#endif
+        bIsSafe = false;
+        m_nRoofState = UNKNOWN;
+        return nErr;
+    }
+    
+    safeInput=0;
+    if(vFields.size()>1) {
+        if(vFields[1].find("error")!=-1) {
+            return ERR_CMDFAILED;
+        }
+        safeInput = std::stoi(vFields[1]);
+    }
+
+    if(safeInput == 0) {
+        bIsSafe = true;
+    }
+    else {
+        bIsSafe = false;
+    }
+    
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [getSafeMountState] bIsSafe      : " << (bIsSafe?"Yes":"No") << std::endl;
+    m_sLogFile.flush();
+#endif
+
+    return nErr;
+}
 
 int CDragonfly::parseFields(const std::string sIn, std::vector<std::string> &svFields, char cSeparator)
 {

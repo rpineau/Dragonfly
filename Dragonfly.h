@@ -98,6 +98,8 @@ public:
     
     void        setCheckSafe(bool bCheckSafe);
     bool        getCheckSafe();
+    void        setCheckMountParked(bool bCheckSafe);
+    bool        getCheckMountParked();
 
 protected:
 
@@ -107,6 +109,7 @@ protected:
     double          m_dCurrentElPosition;
     int             m_RoofAction;
     bool            m_bCheckSafe;
+    bool            m_bCheckMountParked;
     std::string     m_sVersion;
     
     int             m_nRelayActiveDurationMs;
@@ -115,6 +118,7 @@ protected:
     int             domeCommand(std::string sCmd, std::string &sResp, int nTimeout = MAX_TIMEOUT);
     int             getState();
     int             getSafeState(bool &bIsSafe);
+    int             getSafeMountState(bool &bIsSafe);
     int             parseFields(const std::string sIn, std::vector<std::string> &svFields, char cSeparator);
 
     std::string&    trim(std::string &str, const std::string &filter );

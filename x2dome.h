@@ -32,6 +32,7 @@ class TickCountInterface;
 #define CHILD_KEY_RELAY_PULSE   "RelayPulseTime"
 #define CHILD_KEY_IP    "IpAddress"
 #define CHILD_KEY_SAFE    "checkSafeInput3"
+#define CHILD_KEY_MOUNT    "checkSafeInput8"
 
 #if defined(SB_WIN_BUILD)
 #define DEF_PORT_NAME					"COM1"

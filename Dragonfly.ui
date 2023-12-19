@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>354</width>
-    <height>396</height>
+    <height>412</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>354</width>
-    <height>396</height>
+    <height>412</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>354</width>
-    <height>396</height>
+    <height>412</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -78,7 +78,7 @@
       <property name="geometry">
        <rect>
         <x>128</x>
-        <y>328</y>
+        <y>344</y>
         <width>80</width>
         <height>24</height>
        </rect>
@@ -91,7 +91,7 @@
       <property name="geometry">
        <rect>
         <x>232</x>
-        <y>328</y>
+        <y>344</y>
         <width>80</width>
         <height>24</height>
        </rect>
@@ -157,7 +157,7 @@
         <x>16</x>
         <y>192</y>
         <width>296</width>
-        <height>112</height>
+        <height>136</height>
        </rect>
       </property>
       <property name="title">
@@ -198,14 +198,27 @@
       <widget class="QCheckBox" name="checkSafe">
        <property name="geometry">
         <rect>
-         <x>24</x>
+         <x>16</x>
          <y>72</y>
-         <width>248</width>
+         <width>264</width>
          <height>20</height>
         </rect>
        </property>
        <property name="text">
         <string>Enable safe state check on input 3</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="checkMountParked">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>96</y>
+         <width>264</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Enable mount parked check on input 8</string>
        </property>
       </widget>
      </widget>
