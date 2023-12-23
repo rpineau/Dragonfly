@@ -26,10 +26,10 @@ CDragonfly::CDragonfly()
 #if defined(SB_WIN_BUILD)
     m_sLogfilePath = getenv("HOMEDRIVE");
     m_sLogfilePath += getenv("HOMEPATH");
-    m_sLogfilePath += "\\RTI-Dome-Log.txt";
+    m_sLogfilePath += "\\Dragonfly-Log.txt";
 #elif defined(SB_LINUX_BUILD)
     m_sLogfilePath = getenv("HOME");
-    m_sLogfilePath += "/RTI-Dome-Log.txt";
+    m_sLogfilePath += "/Dragonfly-Log.txt";
 #elif defined(SB_MAC_BUILD)
     m_sLogfilePath = getenv("HOME");
     m_sLogfilePath += "/Dragonfly-Log.txt";
@@ -115,16 +115,15 @@ void CDragonfly::Disconnect()
 int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
 {
     int nErr = PLUGIN_OK;
-    unsigned long  ulBytesWrite;
+    unsigned long  ulBytesWrite = 0;
+#ifdef SB_WIN_BUILD
+    typedef int socklen_t;
+    DWORD tvwin;
+#endif
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
     m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] sending : '" << sCmd << "' " << std::endl;
     m_sLogFile.flush();
-#endif
-
-
-#ifdef SB_WIN_BUILD
-    DWORD tvwin;
 #endif
 
 
@@ -149,11 +148,11 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     // Timeout measured in milliseconds
     // Set timeout to MAX_TIMEOUT (MAX_TIMEOUT is in ms)
     tvwin = MAX_TIMEOUT;
-    err = setsockopt(m_iSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tvwin, sizeof(tvwin));
+    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tvwin, sizeof(tvwin));
     if (nErr) {
         return COMMAND_FAILED;
     }
-    err = setsockopt(m_iSockfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tvwin, sizeof(tvwin));
+    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tvwin, sizeof(tvwin));
     if (nErr) {
         return COMMAND_FAILED;
     }
@@ -182,7 +181,8 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] response : '" << sResp << "' " << std::endl;
     m_sLogFile.flush();
 #endif
-
+    if(sResp.size()==0)
+        return ERR_CMDFAILED;
     return nErr;
 
 }
@@ -190,12 +190,17 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
 int CDragonfly::readResponse(std::string &sResp, int nTimeout, char cEndOfResponse)
 {
     int nErr = PLUGIN_OK;
-    unsigned long ulBytesRead = 0;
-    unsigned long ulTotalBytesRead = 0;
+    long lBytesRead = 0;
+    long lTotalBytesRead = 0;
     char szRespBuffer[BUFFER_SIZE];
     char *pszBufPtr;
     int nBufferLen = BUFFER_SIZE -1;
     sockaddr retserver;
+
+#ifdef SB_WIN_BUILD
+    typedef int socklen_t;
+#endif
+
     socklen_t lenretserver = sizeof(retserver);
 
     memset(szRespBuffer, 0, BUFFER_SIZE);
@@ -204,28 +209,33 @@ int CDragonfly::readResponse(std::string &sResp, int nTimeout, char cEndOfRespon
 
     do {
         // Read response from socket
-        ulBytesRead = recvfrom(m_iSockfd, pszBufPtr, nBufferLen - ulTotalBytesRead , 0, &retserver, &lenretserver);
-        if(ulBytesRead < 0) {
+        lBytesRead = recvfrom(m_iSockfd, pszBufPtr, nBufferLen - lTotalBytesRead , 0, &retserver, &lenretserver);
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [readResponse] lBytesRead : " << lBytesRead << std::endl;
+        m_sLogFile.flush();
+#endif
+        if(lBytesRead == -1) {
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 3
             m_sLogFile << "["<<getTimeStamp()<<"]"<< " [readResponse] socket read error." << std::endl;
             m_sLogFile.flush();
 #endif
             return BAD_CMD_RESPONSE;
         }
-        ulTotalBytesRead += ulBytesRead;
-        pszBufPtr+=ulBytesRead;
-    } while (ulTotalBytesRead < BUFFER_SIZE  && *(pszBufPtr-1) != cEndOfResponse);
+        lTotalBytesRead += lBytesRead;
+        pszBufPtr+=lBytesRead;
+    } while (lTotalBytesRead < BUFFER_SIZE  && *(pszBufPtr-1) != cEndOfResponse);
 
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
-    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] response in szRespBuffer : '" << szRespBuffer << "' " << std::endl;
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [readResponse] response in szRespBuffer : '" << szRespBuffer << "' " << std::endl;
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [readResponse] lTotalBytesRead         : " << lTotalBytesRead << std::endl;
     m_sLogFile.flush();
 #endif
 
-    if(ulTotalBytesRead>1)
+    if(lTotalBytesRead>1) {
         *(pszBufPtr-1) = 0; //remove the end of response character
-
-    sResp.assign(szRespBuffer);
+        sResp.assign(szRespBuffer);
+    }
     return nErr;
 }
 

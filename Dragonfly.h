@@ -19,7 +19,6 @@
 #ifdef SB_WIN_BUILD
 #include <time.h>
 #include <WinSock2.h>
-// #include <WS2tcpip.h>
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -47,7 +46,7 @@
 
 #define PLUGIN_VERSION  1.0
 
-#define PLUGIN_DEBUG 3
+// #define PLUGIN_DEBUG 3
 
 #define BUFFER_SIZE 4096
 #define MAX_TIMEOUT 500
