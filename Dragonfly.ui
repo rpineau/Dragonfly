@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>354</width>
+    <width>406</width>
     <height>412</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>354</width>
+    <width>406</width>
     <height>412</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>354</width>
+    <width>406</width>
     <height>412</height>
    </size>
   </property>
@@ -55,7 +55,7 @@
      <widget class="QLabel" name="label_logo">
       <property name="geometry">
        <rect>
-        <x>112</x>
+        <x>152</x>
         <y>8</y>
         <width>78</width>
         <height>80</height>
@@ -108,7 +108,7 @@
        <rect>
         <x>16</x>
         <y>104</y>
-        <width>296</width>
+        <width>344</width>
         <height>73</height>
        </rect>
       </property>
@@ -118,9 +118,9 @@
       <widget class="QLineEdit" name="IPAddress">
        <property name="geometry">
         <rect>
-         <x>128</x>
+         <x>176</x>
          <y>32</y>
-         <width>113</width>
+         <width>152</width>
          <height>24</height>
         </rect>
        </property>
@@ -137,14 +137,14 @@
       <widget class="QLabel" name="label_6">
        <property name="geometry">
         <rect>
-         <x>16</x>
+         <x>8</x>
          <y>32</y>
-         <width>96</width>
+         <width>160</width>
          <height>24</height>
         </rect>
        </property>
        <property name="text">
-        <string>IP Address :</string>
+        <string>IP Address or Hostname :</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -156,7 +156,7 @@
        <rect>
         <x>16</x>
         <y>192</y>
-        <width>296</width>
+        <width>344</width>
         <height>136</height>
        </rect>
       </property>
