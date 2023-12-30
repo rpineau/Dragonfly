@@ -23,14 +23,11 @@ CDragonfly::CDragonfly()
     m_bCheckMountParked = false;
 
 #ifdef PLUGIN_DEBUG
-#if defined(SB_WIN_BUILD)
+#if defined(WIN32)
     m_sLogfilePath = getenv("HOMEDRIVE");
     m_sLogfilePath += getenv("HOMEPATH");
     m_sLogfilePath += "\\Dragonfly-Log.txt";
-#elif defined(SB_LINUX_BUILD)
-    m_sLogfilePath = getenv("HOME");
-    m_sLogfilePath += "/Dragonfly-Log.txt";
-#elif defined(SB_MAC_BUILD)
+#else
     m_sLogfilePath = getenv("HOME");
     m_sLogfilePath += "/Dragonfly-Log.txt";
 #endif
@@ -48,7 +45,11 @@ CDragonfly::CDragonfly()
 
 CDragonfly::~CDragonfly()
 {
-
+#ifdef    PLUGIN_DEBUG
+    // Close LogFile
+    if(m_sLogFile.is_open())
+        m_sLogFile.close();
+#endif
 }
 
 int CDragonfly::Connect(std::string sIpAddress)
@@ -56,6 +57,8 @@ int CDragonfly::Connect(std::string sIpAddress)
     int nErr = PLUGIN_OK;
     std::string sResp;
     struct hostent *server;
+    struct linger l;
+    int rc;
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
     m_sLogFile << "["<<getTimeStamp()<<"]"<< " [Connect] Called." << std::endl;
@@ -74,6 +77,18 @@ int CDragonfly::Connect(std::string sIpAddress)
         m_bIsConnected = false;
         return ERR_COMMOPENING;
     }
+
+    l.l_onoff  = 0;
+    l.l_linger = 0;
+#ifdef WIN32
+    rc = setsockopt(m_iSockfd, SOL_SOCKET, SO_LINGER, (char *)&l, sizeof(l));
+#else
+    rc = setsockopt(m_iSockfd, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
+#endif
+#if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [Connect] setsockopt rc =  " << rc << std::endl;
+    m_sLogFile.flush();
+#endif
 
     memset(&m_Serveraddr, 0, sizeof(m_Serveraddr));
 
@@ -106,7 +121,14 @@ int CDragonfly::Connect(std::string sIpAddress)
 
 void CDragonfly::Disconnect()
 {
+
     if(m_bIsConnected) {
+#ifdef WIN32
+        if (m_iSockfd != -1) closesocket(m_iSockfd);
+#else
+        if (m_iSockfd != -1) close(m_iSockfd);
+#endif
+        m_iSockfd = -1;
     }
     m_bIsConnected = false;
 }
@@ -116,7 +138,7 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
 {
     int nErr = PLUGIN_OK;
     unsigned long  ulBytesWrite = 0;
-#ifdef SB_WIN_BUILD
+#ifdef WIN32
     typedef int socklen_t;
     DWORD tvwin;
 #endif
@@ -144,7 +166,7 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     }
 #endif
 
-#ifdef SB_WIN_BUILD
+#ifdef WIN32
     // Timeout measured in milliseconds
     // Set timeout to MAX_TIMEOUT (MAX_TIMEOUT is in ms)
     tvwin = MAX_TIMEOUT;
@@ -197,7 +219,7 @@ int CDragonfly::readResponse(std::string &sResp, int nTimeout, char cEndOfRespon
     int nBufferLen = BUFFER_SIZE -1;
     sockaddr retserver;
 
-#ifdef SB_WIN_BUILD
+#ifdef WIN32
     typedef int socklen_t;
 #endif
 

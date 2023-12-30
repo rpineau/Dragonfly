@@ -46,7 +46,7 @@
 
 #define PLUGIN_VERSION  1.0
 
-// #define PLUGIN_DEBUG 3
+#define PLUGIN_DEBUG 3
 
 #define BUFFER_SIZE 4096
 #define MAX_TIMEOUT 500
@@ -126,14 +126,15 @@ protected:
     std::string     findField(std::vector<std::string> &svFields, const std::string& token);
 
     // network
-    int m_iSockfd;     // Socket id
+#ifdef WIN32
+    WSADATA m_WSAData;
+    SOCKET m_iSockfd;
+#else
+    int m_iSockfd;
+#endif
     int m_nServerlen;  // Length of server address
     struct sockaddr_in m_Serveraddr; // Struct for server address
     //#endif
-
-#ifdef SB_WIN_BUILD
-    WSADATA m_WSAData;
-#endif
 
 #ifdef PLUGIN_DEBUG
     // timestamp for logs
