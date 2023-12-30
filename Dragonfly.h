@@ -12,14 +12,12 @@
 #include <ctype.h>
 #include <memory.h>
 
-#ifdef SB_MAC_BUILD
-#include <unistd.h>
-#endif
 
 #ifdef SB_WIN_BUILD
 #include <time.h>
 #include <WinSock2.h>
 #else
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
