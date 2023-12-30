@@ -29,4 +29,6 @@ build
 *.pro
 *.lst
 *.tmp
-
+lib*/x64
+lib*/Win32
+lib*/.vs
