@@ -124,9 +124,11 @@ void CDragonfly::Disconnect()
 
     if(m_bIsConnected) {
 #ifdef WIN32
-        if (m_iSockfd != -1) closesocket(m_iSockfd);
+        if (m_iSockfd != -1)
+            closesocket(m_iSockfd);
 #else
-        if (m_iSockfd != -1) close(m_iSockfd);
+        if (m_iSockfd != -1)
+            close(m_iSockfd);
 #endif
         m_iSockfd = -1;
     }
@@ -134,7 +136,7 @@ void CDragonfly::Disconnect()
 }
 
 
-int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
+int CDragonfly::deviceCommand(std::string sCmd, std::string &sResp, int nTimeout)
 {
     int nErr = PLUGIN_OK;
     unsigned long  ulBytesWrite = 0;
@@ -144,14 +146,24 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
 #endif
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
-    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] sending : '" << sCmd << "' " << std::endl;
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [deviceCommand] sending : '" << sCmd << "' " << std::endl;
     m_sLogFile.flush();
 #endif
 
-
-#if defined SB_LINUX_BUILD || defined SB_MAC_BUILD
-    // Mac and Unix use a timeval struct to set the timout
-    // Set timeout to MAX_TIMEOUT (multiply by 1000 as MAX_TIMEOUT is in ms)
+    // Timeout measured in milliseconds
+    // Set timeout to MAX_TIMEOUT (MAX_TIMEOUT is in ms)
+#ifdef WIN32
+    tvwin = MAX_TIMEOUT;
+    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tvwin, sizeof(tvwin));
+    if (nErr) {
+        return COMMAND_FAILED;
+    }
+    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tvwin, sizeof(tvwin));
+    if (nErr) {
+        return COMMAND_FAILED;
+    }
+#else
+    // Posix systems use a timeval struct to set the timout
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = MAX_TIMEOUT*1000;
@@ -166,25 +178,13 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     }
 #endif
 
-#ifdef WIN32
-    // Timeout measured in milliseconds
-    // Set timeout to MAX_TIMEOUT (MAX_TIMEOUT is in ms)
-    tvwin = MAX_TIMEOUT;
-    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tvwin, sizeof(tvwin));
-    if (nErr) {
-        return COMMAND_FAILED;
-    }
-    nErr = setsockopt(m_iSockfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tvwin, sizeof(tvwin));
-    if (nErr) {
-        return COMMAND_FAILED;
-    }
-#endif
+
 
     // Send command to the Dragonfly
     ulBytesWrite = sendto(m_iSockfd, sCmd.c_str(), sCmd.size(), 0,  (const sockaddr*) &m_Serveraddr,  m_nServerlen);
     if (ulBytesWrite < 0) {
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
-        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] error sending command." << std::endl;
+        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [deviceCommand] error sending command." << std::endl;
         m_sLogFile.flush();
 #endif
         return ERR_TXTIMEOUT;
@@ -192,7 +192,7 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     nErr = readResponse(sResp);
     if(nErr) {
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
-        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] error reading response, nErr : '" << nErr << "' " << std::endl;
+        m_sLogFile << "["<<getTimeStamp()<<"]"<< " [deviceCommand] error reading response, nErr : '" << nErr << "' " << std::endl;
         m_sLogFile.flush();
 #endif
 
@@ -200,7 +200,7 @@ int CDragonfly::domeCommand(std::string sCmd, std::string &sResp, int nTimeout)
     }
 
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
-    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [domeCommand] response : '" << sResp << "' " << std::endl;
+    m_sLogFile << "["<<getTimeStamp()<<"]"<< " [deviceCommand] response : '" << sResp << "' " << std::endl;
     m_sLogFile.flush();
 #endif
     if(sResp.size()==0)
@@ -267,7 +267,7 @@ int CDragonfly::getFirmwareVersion(std::string &sVersion)
     std::string sResp;
     std::vector<std::string> respFields;
 
-    nErr = domeCommand("!seletek version#", sResp); // pulse relay 1 for 1 second
+    nErr = deviceCommand("!seletek version#", sResp); // pulse relay 1 for 1 second
      if(nErr) {
          return nErr;
      }
@@ -358,7 +358,7 @@ int CDragonfly::openRoof()
     
     ssCmd << "!relio rlpulse 0 0 " << m_nRelayActiveDurationMs << "#";
     // for motor controller with a Open/Stop/Close system like the Aleko, we only need to activate the relay for a short period
-    nErr = domeCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
+    nErr = deviceCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
     m_RoofAction = OPENING;
     return nErr;
 }
@@ -399,7 +399,7 @@ int CDragonfly::closeRoof()
 
     ssCmd << "!relio rlpulse 0 0 " << m_nRelayActiveDurationMs << "#";
     // for motor controller with a Open/Stop/Close system like the Aleko, we only need to activate the relay for a short period
-    nErr = domeCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
+    nErr = deviceCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
     m_RoofAction = CLOSING;
 
     return nErr;
@@ -542,7 +542,7 @@ int CDragonfly::abortMove()
     if(m_RoofAction!=IDLE) {
         ssCmd << "!relio rlpulse 0 0 " << m_nRelayActiveDurationMs << "#";
         // for motor controller with a Open/Stop/Close system like the Aleko, we only need to activate the relay for a short period
-        nErr = domeCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
+        nErr = deviceCommand(ssCmd.str(), sResp); // pulse relay 1 for 1 second
         if(nErr) {
 #if defined PLUGIN_DEBUG && PLUGIN_DEBUG >= 2
             m_sLogFile << "["<<getTimeStamp()<<"]"<< " [abortMove] error : " << nErr << std::endl;
@@ -634,7 +634,7 @@ int CDragonfly::getState()
 #endif
 
     // read input 0
-    nErr = domeCommand("!relio sndgrd 0 0#", sResp);
+    nErr = deviceCommand("!relio sndgrd 0 0#", sResp);
     if(nErr)
         return nErr;
 
@@ -661,7 +661,7 @@ int CDragonfly::getState()
     }
 
     // read input 1
-    nErr = domeCommand("!relio sndgrd 0 1#", sResp);
+    nErr = deviceCommand("!relio sndgrd 0 1#", sResp);
     if(nErr)
         return nErr;
 
@@ -735,7 +735,7 @@ int CDragonfly::getSafeState(bool &bIsSafe)
 #endif
 
     // read input 2
-    nErr = domeCommand("!relio sndgrd 0 2#", sResp);
+    nErr = deviceCommand("!relio sndgrd 0 2#", sResp);
     if(nErr)
         return nErr;
 
@@ -799,7 +799,7 @@ int CDragonfly::getSafeMountState(bool &bIsSafe)
 #endif
 
     // read input 2
-    nErr = domeCommand("!relio sndgrd 0 7#", sResp);
+    nErr = deviceCommand("!relio sndgrd 0 7#", sResp);
     if(nErr)
         return nErr;
 

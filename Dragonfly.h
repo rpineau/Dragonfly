@@ -13,7 +13,7 @@
 #include <memory.h>
 
 
-#ifdef SB_WIN_BUILD
+#ifdef WIN32
 #include <time.h>
 #include <WinSock2.h>
 #else
@@ -112,7 +112,7 @@ protected:
     int             m_nRelayActiveDurationMs;
     
     int             readResponse(std::string &sResp, int nTimeout = MAX_TIMEOUT, char cEndOfResponse = '#');
-    int             domeCommand(std::string sCmd, std::string &sResp, int nTimeout = MAX_TIMEOUT);
+    int             deviceCommand(std::string sCmd, std::string &sResp, int nTimeout = MAX_TIMEOUT);
     int             getState();
     int             getSafeState(bool &bIsSafe);
     int             getSafeMountState(bool &bIsSafe);
